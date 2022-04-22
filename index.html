@@ -1,8 +1,145 @@
-<!DOCTYPE html>
-<html>
-<body>
+'''
+    Fetch information of the stocks from Yahoo Finance
+    It reads the symbols from a file called "portfolio".
+    Symbols are recorded in this file with white spaces
 
-<p>unblocked games here</p>
-<a href="https://ovolve.github.io/2048-AI/">2048 unblocked</a>
-</body>
-</html>
+    e.g:
+    AAPL QCOM MSFT ROKU
+'''
+import yfinance as yf
+import datetime
+import matplotlib.pyplot as plt
+from yahoo_earnings_calendar import YahooEarningsCalendar
+
+def getEarningCalendar(from_date, to_date):
+        date_from = datetime.datetime.strptime(from_date, '%b %d %Y')
+        date_to = datetime.datetime.strptime(to_date, '%b %d %Y')
+
+        yec = YahooEarningsCalendar(0.5)
+        stocks =yec.earnings_between(date_from, date_to)
+
+        print ("<h1>" + "Earning Calender"  "</h1>")
+        print ("<h1>" + date_from.strftime('%m/%d/%Y') + " to " + date_to.strftime('%m/%d/%Y') + "</h1>")
+        print ("<table>")
+        print ("<tr><th>Symbol</th><th>Company Name</th>><th>When</th><th>EPS Estimate</th></tr>")
+        for each in stocks:
+                if (each['startdatetimetype'] == 'TNS' or each['startdatetimetype'] == 'TAS'):
+                    when = "Time Not Supplied"
+                elif (each['startdatetimetype'] == 'BMO'):
+                    when = "Before Market Open"
+                elif (each['startdatetimetype'] == 'AMC'):
+                    when = "After Market Close"
+                else:
+                    when = 'N/A'
+
+                print("<tr><td>" \
+                        + each['ticker'] + "</td><td>" \
+                        + each['companyshortname'] + "</td><td>" \
+                        + when + "</td><td>" \
+                        + str(each['epsestimate']) + "</td><tr>")
+
+        print ("</table>")
+
+def printHTMLStart():
+	print ("<!DOCTYPE html>");
+	print ("<html>");
+	print ("<head>");
+	print ("<style>");
+	print ("table, th, td {");
+	print ("    border: 1px solid black;");
+	print ("}");
+	print ("th, td {");
+	print ("    padding: 5px;");
+	print ("}");
+	print ("table {");
+	print ("   width: 70%; padding: 10px;");
+	print ("}");
+	print ("table tr:nth-child(even) {");
+	print ("    background-color: #eee;");
+	print ("}");
+	print ("table tr:nth-child(odd) {");
+	print ("   background-color:#fff;");
+	print ("}");
+	print ("table th {");
+	print ("    background-color: #28B7E6;");
+	print ("    color: white;");
+	print ("}");
+	print ("</style>");
+	print ("</head>");
+	print ("<body>");
+
+def printHTMLEnd():
+	print ("</body>")
+	print ("</html>")
+
+def plotChart(stocks, p):
+    for each in stocks:
+        ticker = yf.Ticker(each)
+        hist = ticker.history(period=p)
+        ''' x axes represents date '''
+        x = []
+        ''' y axes represents stock Close value on that date'''
+        y = []
+        for i in hist.index:
+            y.append(hist.loc[i, 'Close'])
+            x.append(i)
+
+        fig = plt.figure()
+        plt.title(each + " " + p + " Chart")
+        plt.xlabel("Time", fontsize=14)
+        plt.ylabel("Stock Value ($)", fontsize=14)
+        ax = fig.add_subplot(111)
+        ax.plot(x, y, color='darkblue', linewidth=1)
+        plt.savefig(each +'.png')
+#       plt.show()
+
+
+
+def getInfo(stocks):
+    for each in stocks:
+        ticker = yf.Ticker(each)
+        info = ticker.info
+
+        print ("<h1>" + info.get("longName") + " (" + info.get("symbol") + ")" + "</h1>" + "<br>")
+
+        print ("Industry        :" + info.get("industry") + "<br>")
+        print ("Previous Close  :" + '{:f}'.format(info.get("previousClose")) + "<br>")
+        print ("Open            :" + '{:f}'.format(info.get("open")) + "<br>")
+        print ("Day Low         :" + '{:f}'.format(info.get("dayLow")) + "<br>")
+        print ("Day High        :" + '{:f}'.format(info.get("dayHigh")) + "<br>")
+        print ("200 Days Ave    :" + '{:f}'.format(info.get("twoHundredDayAverage")) + "<br>")
+        print ("52 Weeks Low    :" + '{:f}'.format(info.get("fiftyTwoWeekLow")) + "<br>")
+        print ("52 Weeks High   :" + '{:f}'.format(info.get("fiftyTwoWeekHigh")) + "<br>")
+        print ("PE              :" + '{:f}'.format(info.get("forwardPE")) + "<br>")
+        #print ("Market CAP      :" + '{:f}'.format(info.get("marketCAP")) + "<br>")
+
+def createTable(stocks):
+        print ("<table>")
+        print ("<tr><th>Symbol</th><th>Industry</th><th>Prev Close</th><th>Open</th><th>Day Low</th><th>Day High</th><th>200 Days Ave</th><th>52 Weeks Low</th><th>52 Weeks High</th><th>PE</th></tr>")
+        for each in stocks:
+            ticker = yf.Ticker(each)
+            info = ticker.info
+            print ("<tr><td>" + info.get("symbol") + "</td><td>" \
+                        + info.get("industry") + "</td><td>" \
+                        + '{:f}'.format(info.get("previousClose")) + "</td><td>" \
+                        + '{:f}'.format(info.get("open")) + "</td><td>" \
+                        + '{:f}'.format(info.get("dayLow")) + "</td><td>" \
+                        + '{:f}'.format(info.get("dayHigh")) + "</td><td>" \
+                        + '{:f}'.format(info.get("twoHundredDayAverage")) + "</td><td>" \
+                        + '{:f}'.format(info.get("fiftyTwoWeekLow")) + "</td><td>" \
+                        + '{:f}'.format(info.get("fiftyTwoWeekHigh")) + "</td><td>" \
+                        + '{:f}'.format(info.get("forwardPE")) + "</td><tr>")
+        print ("</table>")
+
+with open('portfolio') as f:
+    for line in f:
+        symbols = line.strip().split(" ")
+f.close()
+
+
+printHTMLStart()
+#getInfo(symbols)
+createTable(symbols)
+getEarningCalendar('Feb 3 2020', 'Feb 7 2020')
+printHTMLEnd()
+#plotChart(symbols, "10y")
